@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aplikasi Penilaian Program Niha'ie Offline</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- Library untuk Ekspor Excel (.xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+      :root {
+        --primary-color: #00d1c7;
+        --primary-hover: #00746e;
+        --secondary-color: #6c757d;
+        --secondary-hover: #4b4d4e;
+        --danger-color: #dc3545;
+        --danger-hover: #7e000d;
+        --success-color: #28a745;
+        --background-color: #f8f9fa;
+        --text-color: #333;
+        --border-color: #dee2e6;
+        --header-bg: #ffffff;
+        --row-odd-bg: #f2f2f2;
+        --font-family: "Poppins", sans-serif;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: var(--font-family);
+        background-color: var(--background-color);
+        color: var(--text-color);
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 20px;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      header h1 {
+        color: var(--primary-color);
+        margin-bottom: 5px;
+      }
+      .form-container,
+      .table-container {
+        background: var(--header-bg);
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+      }
+      .form-container h2 {
+        margin-bottom: 20px;
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 10px;
+        color: var(--primary-color);
+      }
+      .table-container h2 {
+        margin-bottom: 15px;
+      }
+      .form-group,
+      .dynamic-grade-group {
+        margin-bottom: 15px;
+      }
+      .form-group label,
+      .dynamic-grade-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+      .form-group input[type="text"],
+      .form-group input[type="number"],
+      .dynamic-grade-group input[type="number"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        font-family: var(--font-family);
+      }
+      #grade-inputs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .dynamic-grade-group {
+        position: relative;
+      }
+      .remove-grade-btn {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: var(--danger-color);
+        opacity: 0.5;
+        transition: opacity 0.3s;
+        padding: 0 5px;
+        line-height: 1;
+      }
+      .remove-grade-btn:hover {
+        opacity: 1;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin-top: 20px;
+      }
+
+      /* === PERUBAHAN DI SINI === */
+      .table-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin-bottom: 20px; /* Memberi jarak ke tabel di bawahnya */
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        font-family: var(--font-family);
+        transition: background-color 0.3s ease;
+        color: white;
+      }
+      .btn-primary {
+        background-color: var(--primary-color);
+      }
+      .btn-primary:hover {
+        background-color: var(--primary-hover);
+      }
+      .btn-secondary {
+        background-color: var(--secondary-color);
+      }
+      .btn-secondary:hover {
+        background-color: var(--secondary-hover);
+      }
+      .btn-danger {
+        background-color: var(--danger-color);
+      }
+      .btn-danger:hover {
+        background-color: var(--danger-hover);
+      }
+      .btn-export {
+        background-color: var(--success-color);
+      }
+      .btn-export:hover {
+        background-color: #218838;
+      }
+      .table-wrapper {
+        overflow-x: auto;
+      }
+      #student-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      #student-table th,
+      #student-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+      #student-table thead th {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+      }
+      #student-table tbody tr:nth-child(even) {
+        background-color: var(--row-odd-bg);
+      }
+      .action-buttons button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        margin-right: 10px;
+        font-size: 1.2rem;
+      }
+      #no-data-message {
+        text-align: center;
+        padding: 20px;
+        color: var(--secondary-color);
+      }
+      #notification {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        border-radius: 5px;
+        color: white;
+        background-color: var(--success-color);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.5s, transform 0.5s;
+        z-index: 1000;
+      }
+      #notification.show {
+        opacity: 1;
+        transform: translate(-50%, -10px);
+      }
+      #notification.error {
+        background-color: var(--danger-color);
+      }
+      .hidden {
+        display: none;
+      }
+      @media (max-width: 768px) {
+        .container {
+          padding: 10px;
+        }
+        .form-actions,
+        .table-actions {
+          flex-direction: column;
+        }
+        .btn {
+          width: 100%;
+        }
+        #grade-inputs {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Aplikasi Penilaian Program Niha'ie</h1>
+        <p>Aplikasi offline untuk mengelola nilai Program Niha'ie dengan mudah.</p>
+      </header>
+
+      <main>
+        <div class="form-container">
+          <h2>Form Input Nilai Program Niha'ie</h2>
+          <form id="student-form">
+            <input type="hidden" id="student-id" />
+            <div class="form-group">
+              <label for="nama_lengkap">Nama Lengkap</label>
+              <input type="text" id="nama_lengkap" placeholder="Masukkan nama siswa" required />
+            </div>
+            <div id="grade-inputs"></div>
+            <div class="form-actions">
+              <button type="button" id="add-grade-field" class="btn btn-secondary">+ Tambah Kolom Nilai</button>
+              <button type="submit" id="save-button" class="btn btn-primary">Simpan Siswa</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-container">
+          <h2>Data Nilai Program Niha'ie</h2>
+          <div class="table-actions">
+            <button id="export-word" class="btn btn-primary">Export ke Word (.doc)</button>
+            <button id="export-excel" class="btn btn-export">Export ke Excel (.xlsx)</button>
+            <button id="delete-all" class="btn btn-danger">🗑️ Hapus Semua Data</button>
+          </div>
+          <div class="table-wrapper">
+            <table id="student-table">
+              <thead id="table-head"></thead>
+              <tbody id="student-list"></tbody>
+            </table>
+          </div>
+          <p id="no-data-message" class="hidden">Belum ada data siswa. Silakan tambahkan melalui form di atas.</p>
+        </div>
+      </main>
+    </div>
+
+    <div id="notification" class="hidden"></div>
+
+    <script>
+      // Seluruh kode JavaScript tidak ada perubahan dan tetap sama seperti versi sebelumnya.
+      document.addEventListener("DOMContentLoaded", () => {
+        const studentForm = document.getElementById("student-form");
+        const studentIdInput = document.getElementById("student-id");
+        const studentNameInput = document.getElementById("nama_lengkap");
+        const gradeInputsContainer = document.getElementById("grade-inputs");
+        const addGradeFieldBtn = document.getElementById("add-grade-field");
+        const tableHead = document.getElementById("table-head");
+        const studentList = document.getElementById("student-list");
+        const noDataMessage = document.getElementById("no-data-message");
+        const exportWordBtn = document.getElementById("export-word");
+        const exportExcelBtn = document.getElementById("export-excel");
+        const deleteAllBtn = document.getElementById("delete-all");
+
+        let students = JSON.parse(localStorage.getItem("students")) || [];
+        let gradeHeaders = JSON.parse(localStorage.getItem("gradeHeaders")) || [
+          { key: "KKB", name: "Nilai KKB" },
+          { key: "Otobiografi", name: "Nilai Otobiografi" },
+          { key: "Khutbah Jum'at", name: "Nilai Khutbah Jum'at" },
+          { key: "Resensi Buku", name: "Nilai Resensi Buku" },
+          { key: "Jenazah", name: "Nilai Jenazah" },
+          { key: "Praktek Imam", name: "Nilai Praktek Imam" },
+          { key: "Riset & Bahtsul", name: "Nilai Riset & Bahtsul" },
+          { key: "Manasik Haji", name: "Nilai Manasik Haji" },
+          { key: "Amaliyah Tadris", name: "Nilai Amaliyah Tadris" },
+          { key: "Paper Rihlah", name: "Nilai Paper Rihlah" },
+          { key: "Mid Semester 1", name: "Nilai Mid Semester 1" },
+          { key: "Semester 1", name: "Nilai Semester 1" },
+          { key: "UAS", name: "Nilai UAS" },
+          { key: "Ujian Niha'ie", name: "Nilai Ujian Niha'ie" },
+          { key: "Al-Qur'an", name: "Nilai Al-Qur'an" },
+        ];
+        const saveData = () => {
+          localStorage.setItem("students", JSON.stringify(students));
+          localStorage.setItem("gradeHeaders", JSON.stringify(gradeHeaders));
+        };
+        const generateId = () => `siswa-${Date.now()}`;
+        const showNotification = (message, isError = false) => {
+          const el = document.getElementById("notification");
+          el.textContent = message;
+          el.className = isError ? "error" : "success";
+          el.classList.add("show");
+          setTimeout(() => {
+            el.classList.remove("show");
+          }, 3000);
+        };
+        const calculateAverage = (grades) => {
+          const values = gradeHeaders.map((header) => Number(grades[header.key]) || 0);
+          if (values.length === 0) return 0;
+          const sum = values.reduce((acc, val) => acc + val, 0);
+          return (sum / values.length).toFixed(2);
+        };
+        const getPredicate = (average) => {
+          if (average >= 85) return "Mumtaz";
+          if (average >= 75) return "Jayyid Jiddan";
+          if (average >= 65) return "Jayyid";
+          if (average >= 55) return "Maqbul";
+          if (average >= 45) return "Dhoif";
+          return "Dhoif Jiddan";
+        };
+        const resetForm = () => {
+          studentForm.reset();
+          studentIdInput.value = "";
+          document.getElementById("save-button").textContent = "Simpan Siswa";
+          studentNameInput.focus();
+        };
+
+        const renderGradeInputs = () => {
+          gradeInputsContainer.innerHTML = "";
+          gradeHeaders.forEach((header) => {
+            const isDefault = ["KKB", "Otobiografi", "Khutbah Jum'at", "Resensi Buku", "Jenazah", "Praktek Imam", "Riset & Bahtsul", "Manasik Haji", "Amaliyah Tadris", "Paper Rihlah", "Mid Semester 1", "Semester 1", "UAS", "Ujian Niha'ie", "Al-Qur'an",].includes(header.key);
+            const group = document.createElement("div");
+            group.className = "dynamic-grade-group";
+            group.innerHTML = `<label for="nilai_${header.key}">${header.name}</label><input type="number" id="nilai_${header.key}" data-key="${header.key}" placeholder="Input ${header.name}" min="0" max="100">${
+              !isDefault ? `<button type="button" class="remove-grade-btn" title="Hapus kolom ${header.name}">×</button>` : ""
+            }`;
+            if (!isDefault) {
+              group.querySelector(".remove-grade-btn").onclick = () => removeGradeColumn(header.key);
+            }
+            gradeInputsContainer.appendChild(group);
+          });
+        };
+        const renderTable = () => {
+          tableHead.innerHTML = "";
+          const headerRow = document.createElement("tr");
+          const headers = ["No", "Nama", ...gradeHeaders.map((h) => h.name), "Rata-rata", "Predikat", "Aksi"];
+          headerRow.innerHTML = headers.map((h) => `<th>${h}</th>`).join("");
+          tableHead.appendChild(headerRow);
+          studentList.innerHTML = "";
+          noDataMessage.classList.toggle("hidden", students.length > 0);
+          studentList.classList.toggle("hidden", students.length === 0);
+          students.forEach((student, index) => {
+            const average = calculateAverage(student.grades);
+            const predicate = getPredicate(average);
+            const row = document.createElement("tr");
+            let rowHTML = `<td>${index + 1}</td><td>${student.name}</td>`;
+            gradeHeaders.forEach((header) => {
+              rowHTML += `<td>${student.grades[header.key] || "0"}</td>`;
+            });
+            rowHTML += `<td>${average}</td><td>${predicate}</td><td class="action-buttons"><button class="edit-btn" title="Edit">✏️</button><button class="delete-btn" title="Hapus">🗑️</button></td>`;
+            row.innerHTML = rowHTML;
+            row.querySelector(".edit-btn").onclick = () => editStudent(student.id);
+            row.querySelector(".delete-btn").onclick = () => deleteStudent(student.id);
+            studentList.appendChild(row);
+          });
+        };
+        const handleFormSubmit = (e) => {
+          e.preventDefault();
+          const id = studentIdInput.value;
+          const name = studentNameInput.value.trim();
+          if (!name) {
+            showNotification("Nama siswa tidak boleh kosong!", true);
+            return;
+          }
+          const grades = {};
+          gradeInputsContainer.querySelectorAll('input[type="number"]').forEach((input) => {
+            grades[input.dataset.key] = input.value || "0";
+          });
+          if (id) {
+            const studentIndex = students.findIndex((s) => s.id === id);
+            if (studentIndex > -1) {
+              students[studentIndex] = { ...students[studentIndex], name, grades };
+              showNotification("Data siswa berhasil diperbarui!");
+            }
+          } else {
+            const newStudent = { id: generateId(), name, grades };
+            students.push(newStudent);
+            showNotification("Siswa baru berhasil ditambahkan!");
+          }
+          saveData();
+          renderTable();
+          resetForm();
+        };
+        const addGradeColumn = () => {
+          const columnName = prompt("Masukkan nama kolom nilai baru (contoh: Program):");
+          if (columnName && columnName.trim() !== "") {
+            const cleanName = columnName.trim();
+            const columnKey = `custom_${cleanName.toLowerCase().replace(/\s+/g, "_")}`;
+            if (gradeHeaders.some((h) => h.key === columnKey)) {
+              alert("Kolom dengan nama tersebut sudah ada.");
+              return;
+            }
+            gradeHeaders.push({ key: columnKey, name: cleanName });
+            saveData();
+            renderGradeInputs();
+            renderTable();
+            showNotification(`Kolom "${cleanName}" berhasil ditambahkan.`);
+          }
+        };
+        const removeGradeColumn = (keyToRemove) => {
+          if (confirm(`Anda yakin ingin menghapus kolom ini?`)) {
+            gradeHeaders = gradeHeaders.filter((h) => h.key !== keyToRemove);
+            students.forEach((student) => {
+              delete student.grades[keyToRemove];
+            });
+            saveData();
+            renderGradeInputs();
+            renderTable();
+            showNotification("Kolom nilai berhasil dihapus.");
+          }
+        };
+        const editStudent = (id) => {
+          const student = students.find((s) => s.id === id);
+          if (student) {
+            studentIdInput.value = student.id;
+            studentNameInput.value = student.name;
+            gradeHeaders.forEach((header) => {
+              const input = gradeInputsContainer.querySelector(`input[data-key="${header.key}"]`);
+              if (input) {
+                input.value = student.grades[header.key] || "";
+              }
+            });
+            document.getElementById("save-button").textContent = "Update Siswa";
+            window.scrollTo(0, 0);
+            studentNameInput.focus();
+          }
+        };
+        const deleteStudent = (id) => {
+          if (confirm("Yakin hapus data ini?")) {
+            students = students.filter((s) => s.id !== id);
+            saveData();
+            renderTable();
+            resetForm();
+            showNotification("Data siswa berhasil dihapus.");
+          }
+        };
+        const deleteAllData = () => {
+          if (confirm("PERINGATAN! Yakin hapus SEMUA data?")) {
+            students = [];
+            gradeHeaders = [
+              { key: "KKB", name: "Nilai KKB" },
+              { key: "Otobiografi", name: "Nilai Otobiografi" },
+              { key: "Khutbah Jum'at", name: "Nilai Khutbah Jum'at" },
+              { key: "Resensi Buku", name: "Nilai Resensi Buku" },
+              { key: "Jenazah", name: "Nilai Jenazah" },
+              { key: "Praktek Imam", name: "Nilai Praktek Imam" },
+              { key: "Riset & Bahtsul", name: "Nilai Riset & Bahtsul" },
+              { key: "Manasik Haji", name: "Nilai Manasik Haji" },
+              { key: "Amaliyah Tadris", name: "Nilai Amaliyah Tadris" },
+              { key: "Paper Rihlah", name: "Nilai Paper Rihlah" },
+              { key: "Mid Semester 1", name: "Nilai Mid Semester 1" },
+              { key: "Semester 1", name: "Nilai Semester 1" },
+              { key: "UAS", name: "Nilai UAS" },
+              { key: "Ujian Niha'ie", name: "Nilai Ujian Niha'ie" },
+              { key: "Al-Qur'an", name: "Nilai Al-Qur'an" },
+            ];
+            saveData();
+            renderGradeInputs();
+            renderTable();
+            showNotification("Semua data berhasil dihapus.", true);
+          }
+        };
+
+        const exportToWord = () => {
+          if (students.length === 0) {
+            alert("Tidak ada data untuk diekspor.");
+            return;
+          }
+          let tableHtml = `<table border="1" style="border-collapse: collapse; width: 100%; font-family: sans-serif;"><thead><tr style="background-color: #f2f2f2;">${[
+            "No",
+            "Nama Lengkap",
+            ...gradeHeaders.map((h) => h.name),
+            "Rata-rata",
+            "Predikat",
+          ]
+            .map((h) => `<th style="padding: 8px;">${h}</th>`)
+            .join("")}</tr></thead><tbody>${students
+            .map(
+              (student, index) =>
+                `<tr><td style="padding: 8px;">${index + 1}</td><td style="padding: 8px;">${student.name}</td>${gradeHeaders
+                  .map((h) => `<td style="padding: 8px;">${student.grades[h.key] || "0"}</td>`)
+                  .join("")}<td style="padding: 8px;">${calculateAverage(student.grades)}</td><td style="padding: 8px;">${getPredicate(calculateAverage(student.grades))}</td></tr>`
+            )
+            .join("")}</tbody></table>`;
+          const sourceHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Data Nilai Siswa</title></head><body><h1>Data Nilai Siswa</h1>${tableHtml}</body></html>`;
+          const source = "data:application/vnd.ms-word;charset=utf-8," + encodeURIComponent(sourceHTML);
+          const fileDownload = document.createElement("a");
+          document.body.appendChild(fileDownload);
+          fileDownload.href = source;
+          fileDownload.download = "data_nilai_program_niha'ie.doc";
+          fileDownload.click();
+          document.body.removeChild(fileDownload);
+        };
+
+        const exportToExcel = () => {
+          if (students.length === 0) {
+            alert("Tidak ada data untuk diekspor.");
+            return;
+          }
+          const dataForExport = students.map((student, index) => {
+            const average = calculateAverage(student.grades);
+            const predicate = getPredicate(average);
+            const rowData = { No: index + 1, "Nama Lengkap": student.name };
+            gradeHeaders.forEach((header) => {
+              rowData[header.name] = Number(student.grades[header.key] || 0);
+            });
+            rowData["Rata-rata"] = Number(average);
+            rowData["Predikat"] = predicate;
+            return rowData;
+          });
+          const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, "Data Nilai");
+          const columnWidths = [{ wch: 5 }, { wch: 30 }];
+          gradeHeaders.forEach((header) => columnWidths.push({ wch: header.name.length + 5 }));
+          columnWidths.push({ wch: 12 });
+          columnWidths.push({ wch: 12 });
+          worksheet["!cols"] = columnWidths;
+          XLSX.writeFile(workbook, `data_nilai_program_niha'ie_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        };
+
+        studentForm.addEventListener("submit", handleFormSubmit);
+        addGradeFieldBtn.addEventListener("click", addGradeColumn);
+        deleteAllBtn.addEventListener("click", deleteAllData);
+        exportWordBtn.addEventListener("click", exportToWord);
+        exportExcelBtn.addEventListener("click", exportToExcel);
+
+        renderGradeInputs();
+        renderTable();
+      });
+    </script>
+  </body>
+</html>
